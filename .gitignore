@@ -1,6 +1,10 @@
+.idea
+.vs/
+build/
+dist/
+packages/
+bin/
+obj/
 *.pyc
 *.spec
 *.exe
-build/
-dist/
-.idea

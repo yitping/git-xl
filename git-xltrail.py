@@ -1,7 +1,17 @@
 #!/usr/bin/env python
 import sys
 import os
+import json
 import subprocess
+import platform
+import winreg
+import logging
+import ctypes
+import ctypes.wintypes
+
+from ctypes import (Structure, windll, POINTER)
+from ctypes.wintypes import (LPWSTR, DWORD, BOOL)
+
 
 
 VERSION = '0.0.0'
@@ -156,6 +166,122 @@ class Installer:
             os.remove(path)
 
 
+class AddinInstaller:
+
+    registry_hive = winreg.HKEY_CURRENT_USER
+    addin_path = ''
+    addin_name = {'x86': 'xltrail.xll', 'x64': 'xltrail64.xll'}
+
+    def get_excel_version(self):
+        try:
+            cur_ver = winreg.QueryValue(winreg.HKEY_CLASSES_ROOT, 'Excel.Application\CurVer')
+            return '{}.0'.format(cur_ver.replace('Excel.Application.', ''))
+        except Exception as ex:
+            pass
+
+    def get_registry_key(self):
+        excel_version = self.get_excel_version()
+        registry_key = f'Software\\Microsoft\\Office\\{excel_version}\\Excel\\Options'
+        return registry_key
+
+    def get_excel_path(self):
+        try:
+            key = winreg.OpenKey(winreg.HKEY_LOCAL_MACHINE, 'SOFTWARE\Microsoft\Windows\CurrentVersion\App Paths\excel.exe')
+            path = winreg.QueryValueEx(key, 'Path')[0]
+            return os.path.join(path, 'excel.exe')
+        except Exception as ex:
+            pass
+
+    def get_binary_type(self, path):
+        _GetBinaryType = ctypes.windll.kernel32.GetBinaryTypeW
+        _GetBinaryType.argtypes = (LPWSTR, POINTER(DWORD))
+        _GetBinaryType.restype = BOOL
+        res = DWORD()
+        hresult = _GetBinaryType(path, res)
+        if hresult == 0:
+            raise ValueError('DLL call GetBinary failed')
+        return res.value
+
+    def get_excel_bitness(self):
+        try:
+            #https://msdn.microsoft.com/en-us/library/windows/desktop/aa364819%28v=vs.85%29.aspx?f=255&MSPPError=-2147217396
+            excel_path = self.get_excel_path()
+            binary_type = self.get_binary_type(excel_path)
+            if binary_type == 0: return 'x86'
+            if binary_type == 6: return 'x64'
+        except Exception as ex:
+            logger.exception(ex)
+
+    def get_installed_version_info(self):
+        try:
+            key = winreg.OpenKey(self.hive, self.sub_key)
+            for i in xrange(0, winreg.QueryInfoKey(key)[1]):
+                name, value, _ =  winreg.EnumValue(key, i)
+                if name.startswith('OPEN') and any(x in self.addin_name.values() for x in value):
+                    return (name, value)
+        except Exception as ex:
+            logger.exception(ex)
+
+    def get_installed_addins(self):
+        names = []
+        key = winreg.OpenKey(self.hive, self.sub_key)
+        for i in xrange(0, winreg.QueryInfoKey(key)[1]):
+            name, value, _ =  winreg.EnumValue(key, i)
+            if name.startswith('OPEN'):
+                names.append((name, value))
+        return names
+
+    def create_open_key(self, installed_open_keys):
+        name = 'OPEN'
+        if installed_open_keys:
+            i = 0
+            for i, (n, v) in enumerate(installed_open_keys):
+                j = n.replace('OPEN', '')
+                j = int(j) if j else 0
+                if i !=  j:
+                    break
+            j = installed_open_keys[-1][0].replace('OPEN', '')
+            j = int(j) if j else 0
+            if i == len(installed_open_keys) - 1 and j == i:
+                i += 1
+            if i != 0:
+                name = f'{name}{i}'
+        return name
+
+
+    def install(self):
+        # gather excel-related info
+        bitness = self.get_excel_bitness()
+        registry_key = self.get_registry_key()
+
+        # xll path and hkey
+        value = f'/R "{self.addin_path}"'
+
+        # get list of installed addins
+        names = sorted(self.get_installed_addins(), key=lambda addin: addin[0])
+
+        # work out if addin is already installed and get/create reg key
+        installed_names = [(n, v) for n, v in names if self.addin_name[bitness] in value]
+        name = installed_names[0][0] if installed_names else self.create_open_key(names)
+
+        # write to registry
+        with winreg.OpenKey(self.HIVE, registry_key, 0, winreg.KEY_ALL_ACCESS) as key:
+            winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
+
+
+    def uninstall(self):
+        registry_key = self.get_registry_key()
+        try:
+            installed = self.get_installed_version_info()
+            if installed:
+                with winreg.OpenKey(self.registry_hive, registry_key, 0, winreg.KEY_ALL_ACCESS) as key:
+                    winreg.DeleteValue(key, installed.key)
+
+        except Exception as ex:
+            logger.exception(ex)
+
+
+
 GIT_XLTRAIL_VERSION = f'git-xltrail/{VERSION} (windows; Python {PYTHON_VERSION}); git {GIT_COMMIT}'
 
 HELP_GENERIC = f"""{GIT_XLTRAIL_VERSION}
@@ -253,6 +379,17 @@ class CommandParser:
         else:
             installer = Installer(mode='global')
         installer.install()
+
+    def addin(self, *args):
+        if args:
+            addin_installer = AddinInstaller(path=os.getcwd())
+            if args[0] == '--install':
+                return addin_installer.install()
+            if args[0] == '--uninstall':
+                return addin_installer.uninstall()
+        return print(
+            f"""Invalid option "{args[0]}" for "git-xltrail install"\nRun 'git-xltrail --help' for usage.""")
+
 
     def uninstall(self, *args):
         if args:

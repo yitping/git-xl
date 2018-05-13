@@ -157,3 +157,23 @@ class CommandParser(TestCase):
         command_parser.execute()
         self.assertTrue(mock_stdout.getvalue())
 
+
+
+class TestAddinInstaller(TestCase):
+
+    @mock.patch('git-xltrail.winreg.QueryValue', return_value='Excel.Application.16')
+    def test_can_get_excel_version(self, mock_query_value):
+        addin_installer = git_xltrail.AddinInstaller()
+        self.assertEqual(addin_installer.get_excel_version(), '16.0')
+
+    @mock.patch('git-xltrail.winreg.OpenKey', return_value=mock.Mock())
+    @mock.patch('git-xltrail.winreg.QueryValueEx', return_value=('C:\\Program Files (x86)\\Microsoft Office\\Root\\Office16\\', 1))
+    def test_can_get_excel_path(self, mock_query_value, mock_open_key):
+        addin_installer = git_xltrail.AddinInstaller()
+        self.assertEqual(addin_installer.get_excel_path(), 'C:\Program Files (x86)\Microsoft Office\Root\Office16\excel.exe')
+
+    @mock.patch('git-xltrail.AddinInstaller.get_excel_path', return_value='c:\\path\\excel\\excel.exe')
+    @mock.patch('git-xltrail.AddinInstaller.get_binary_type', return_value=6)
+    def test_can_get_excel_bitness(self, mock_get_binary_type, mock_get_excel_path):
+        addin_installer = git_xltrail.AddinInstaller()
+        self.assertEqual('x64', addin_installer.get_excel_bitness())

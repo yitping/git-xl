@@ -1,5 +1,5 @@
-<DnaLibrary Name="XltrailClient Add-In" RuntimeVersion="v4.0">
-  <ExternalLibrary Path="XltrailClient.dll" ExplicitExports="false" LoadFromBytes="true" Pack="true" />
+<DnaLibrary Name="xltrail Excel Addin" RuntimeVersion="v4.0">
+  <ExternalLibrary Path="xltrail.dll" ExplicitExports="false" LoadFromBytes="true" Pack="true" />
   
   <!-- 
        The RuntimeVersion attribute above allows two settings:

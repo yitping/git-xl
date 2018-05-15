@@ -73,9 +73,9 @@
     </None>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\XltrailClient\XltrailClient.csproj">
+    <ProjectReference Include="..\Addin\Addin.csproj">
       <Project>{3704bbb0-56ef-4963-ad2f-fd3bbdd71762}</Project>
-      <Name>XltrailClient</Name>
+      <Name>Addin</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup />

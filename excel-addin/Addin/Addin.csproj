@@ -108,7 +108,9 @@
     <Compile Include="Providers\GitProvider.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Addin.dna" />
+    <None Include="xltrail.dna">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Include="packages.config" />
     <None Include="Properties\ExcelDna.Build.props" />
   </ItemGroup>

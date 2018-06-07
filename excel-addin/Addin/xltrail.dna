@@ -1,4 +1,4 @@
-<DnaLibrary Name="xltrail Excel Addin" RuntimeVersion="v4.0">
+<DnaLibrary Name="xltrail" RuntimeVersion="v4.0">
   <ExternalLibrary Path="xltrail.dll" ExplicitExports="false" LoadFromBytes="true" Pack="true" />
   
   <!-- 

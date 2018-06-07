@@ -42,7 +42,7 @@
     <!--
       Suffix used for packed .xll files e.g. MyAddIn-packed.xll
     -->
-    <ExcelDnaPackXllSuffix Condition="'$(ExcelDnaPackXllSuffix)' == ''">-packed</ExcelDnaPackXllSuffix>
-  </PropertyGroup>
+      <ExcelDnaPackXllSuffix Condition="'$(ExcelDnaPackXllSuffix)' == ''">_packed</ExcelDnaPackXllSuffix>
+    </PropertyGroup>
 </Project>
 

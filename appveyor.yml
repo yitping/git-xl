@@ -1,3 +1,4 @@
+image: Visual Studio 2017
 skip_branch_with_pr: true
 
 version: '{build}'
@@ -17,11 +18,19 @@ init:
 install:
   - cinst InnoSetup -y
   - nuget install secure-file -ExcludeVersion
+  - cd excel-addin
+  - echo %cd%
+  - nuget restore
+  - cd ..
   - secure-file\tools\secure-file -decrypt scripts\windows\key.p12.enc -secret %secure%
   - C:\Python36\Scripts\pip install -r requirements.txt
   - C:\Python36-x64\Scripts\pip install -r requirements.txt
 
 build_script:
+  - cd excel-addin
+  - echo %cd%
+  - msbuild /logger:"C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll" /p:Configuration=Release
+  - cd ..
   - C:\Python36\python .\scripts\windows\update-version-info.py
   - C:\Python36\Scripts\pyinstaller --onefile .\src\diff.py --name git-xltrail-diff-x86.exe --version-file .\scripts\windows\git-xltrail-version-info.py --icon .\scripts\windows\git-xltrail-logo.ico --add-data .\src\xltrail-core.dll;.
   - mv dist\git-xltrail-diff-x86.exe git-xltrail-diff-x86.exe
@@ -37,6 +46,16 @@ build_script:
   - mv dist\git-xltrail-x64.exe git-xltrail-x64.exe
 
 after_build:
+  - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDna.xll" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.xll*" /C /Y
+  - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.dna" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.dna*" /C /Y
+  - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDna64.xll" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.xll*" /C /Y
+  - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDnaPack.exe" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.dna" /Y
+  - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDnaPack.exe" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.dna" /Y
+  - del "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.xll"
+  - del "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.xll"
+  - ren "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail_packed.xll" xltrail.xll
+  - ren "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64_packed.xll" xltrail64.xll
+  - dir "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release"
   - signtool sign /f scripts/windows/key.p12 /p %secure% git-xltrail-*.exe
   - iscc scripts\windows\inno-setup-git-xltrail-installer.iss
   - ps: >-
@@ -59,6 +78,10 @@ artifacts:
   - path: git-xltrail-diff-x64.exe
   - path: git-xltrail-merge-x86.exe
   - path: git-xltrail-merge-x64.exe
+  - path: excel-addin\Addin\bin\Release\xltrail.xll
+    name: xltrail.xll
+  - path: excel-addin\Addin\bin\Release\xltrail64.xll
+    name: xltrail64.xll
 
 deploy:
 - provider: GitHub

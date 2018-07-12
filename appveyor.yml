@@ -1,6 +1,10 @@
 image: Visual Studio 2017
 skip_branch_with_pr: true
 
+environment:
+  NETLIFY_BUILD_HOOK:
+    secure: B+WxLXotvuRzEvMtuTWijhs3s+jvnGifsmNIMEf7ll0=
+
 version: '{build}'
 init:
   # Set "build version number" to "short-commit-hash" or when tagged to "tag name" (Travis style)
@@ -69,6 +73,9 @@ test_script:
   - C:\Python36\python -m unittest discover src -vv
   - C:\Python36-x64\python -m unittest discover src -vv
 
+
+on_success:
+  - ps: if ($env:APPVEYOR_REPO_TAG -eq $TRUE) { Invoke-RestMethod -Uri https://api.netlify.com/build_hooks/$env:NETLIFY_BUILD_HOOK -Method 'POST' -Body '' }
 
 artifacts:
   - path: git-xltrail-windows-*.exe

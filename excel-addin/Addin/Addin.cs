@@ -33,6 +33,7 @@ namespace xltrail.Client
             private void XlApp_WorkbookOpen(Excel.Workbook workbook)
             {
                 xlApp.ScreenUpdating = true;
+                xlApp.StatusBar = null;
                 var path = workbook.FullName;
 
                 var directory = Path.GetDirectoryName(path);
@@ -70,6 +71,7 @@ namespace xltrail.Client
                     //check if local != remote
                     if (local.Tip.Id != remote.Tip.Id)
                     {
+                        xlApp.StatusBar = "Pulling newer " + gitPath + " version from " + url;
                         var localWorkbook = local[gitPath];
                         var remoteWorkbook = remote[gitPath];
 
@@ -81,7 +83,8 @@ namespace xltrail.Client
                         //close active workbook
                         workbook.Close(false);
 
-                        //reset local to remotr
+                        //reset local to remote
+                        //TODO: this should only apply to current file (and not the entire branch)
                         repository.Reset(LibGit2Sharp.ResetMode.Hard, remote.Tip);
 
                         //merge remote into current branch

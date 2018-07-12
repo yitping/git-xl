@@ -196,8 +196,14 @@ class Installer:
 class AddinInstaller:
 
     registry_hive = winreg.HKEY_CURRENT_USER
-    addin_path = ''
-    addin_name = {'x86': 'xltrail.xll', 'x64': 'xltrail64.xll'}
+
+    def __init__(self, path):
+        self.path = path
+        self.excel_version = self.get_excel_version()
+        self.excel_bitness = self.get_excel_bitness()
+        self.addin_path = os.path.join(os.getenv('LOCALAPPDATA'), 'xltrail')
+        self.addin_name = {'x86': 'xltrail.xll', 'x64': 'xltrail64.xll'}[self.excel_bitness]
+        self.sub_key = f'Software\\Microsoft\\Office\\{self.excel_version}\\Excel\\Options'
 
     def get_excel_version(self):
         try:
@@ -241,18 +247,19 @@ class AddinInstaller:
 
     def get_installed_version_info(self):
         try:
-            key = winreg.OpenKey(self.hive, self.sub_key)
-            for i in xrange(0, winreg.QueryInfoKey(key)[1]):
+            key = winreg.OpenKey(self.registry_hive, self.sub_key)
+            for i in iter(range(0, winreg.QueryInfoKey(key)[1])):
                 name, value, _ =  winreg.EnumValue(key, i)
-                if name.startswith('OPEN') and any(x in self.addin_name.values() for x in value):
+                if name.startswith('OPEN') and isinstance(value, str) and value.endswith(self.addin_name + '"'):
                     return (name, value)
         except Exception as ex:
             logger.exception(ex)
 
     def get_installed_addins(self):
+        excel_version = self.get_excel_version() 
         names = []
-        key = winreg.OpenKey(self.hive, self.sub_key)
-        for i in xrange(0, winreg.QueryInfoKey(key)[1]):
+        key = winreg.OpenKey(self.registry_hive, self.sub_key)
+        for i in iter(range(0, winreg.QueryInfoKey(key)[1])):
             name, value, _ =  winreg.EnumValue(key, i)
             if name.startswith('OPEN'):
                 names.append((name, value))
@@ -280,19 +287,21 @@ class AddinInstaller:
         # gather excel-related info
         bitness = self.get_excel_bitness()
         registry_key = self.get_registry_key()
+        addin_path = os.path.join(self.addin_path, self.addin_name)
+
 
         # xll path and hkey
-        value = f'/R "{self.addin_path}"'
+        value = f'/R "{addin_path}"'
 
         # get list of installed addins
         names = sorted(self.get_installed_addins(), key=lambda addin: addin[0])
 
         # work out if addin is already installed and get/create reg key
-        installed_names = [(n, v) for n, v in names if self.addin_name[bitness] in value]
+        installed_names = [(n, v) for n, v in names if self.addin_name in value]
         name = installed_names[0][0] if installed_names else self.create_open_key(names)
 
         # write to registry
-        with winreg.OpenKey(self.HIVE, registry_key, 0, winreg.KEY_ALL_ACCESS) as key:
+        with winreg.OpenKey(self.registry_hive, registry_key, 0, winreg.KEY_ALL_ACCESS) as key:
             winreg.SetValueEx(key, name, 0, winreg.REG_SZ, value)
 
 
@@ -301,8 +310,9 @@ class AddinInstaller:
         try:
             installed = self.get_installed_version_info()
             if installed:
+                # installed returns a tuple (key, value)
                 with winreg.OpenKey(self.registry_hive, registry_key, 0, winreg.KEY_ALL_ACCESS) as key:
-                    winreg.DeleteValue(key, installed.key)
+                    winreg.DeleteValue(key, installed[0])
 
         except Exception as ex:
             logger.exception(ex)

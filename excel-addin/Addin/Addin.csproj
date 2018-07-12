@@ -100,16 +100,7 @@
     <Compile Include="Addin.cs" />
     <Compile Include="Git.cs" />
     <Compile Include="Logger.cs" />
-    <Compile Include="Models\Branch.cs" />
-    <Compile Include="Models\Config\Config.cs" />
-    <Compile Include="Models\Folder.cs" />
-    <Compile Include="Models\Repositories.cs" />
-    <Compile Include="Models\Workbook.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Models\Config\Repositories.cs" />
-    <Compile Include="Models\Repository.cs" />
-    <Compile Include="Providers\ConfigProvider.cs" />
-    <Compile Include="Providers\GitProvider.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="xltrail.dna">

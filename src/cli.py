@@ -201,7 +201,7 @@ class AddinInstaller:
         self.path = path
         self.excel_version = self.get_excel_version()
         self.excel_bitness = self.get_excel_bitness()
-        self.addin_path = os.path.join(os.getenv('LOCALAPPDATA'), 'xltrail')
+        self.addin_path = os.path.join(os.getenv('LOCALAPPDATA'), 'xltrail', 'addin')
         self.addin_name = {'x86': 'xltrail.xll', 'x64': 'xltrail64.xll'}[self.excel_bitness]
         self.sub_key = f'Software\\Microsoft\\Office\\{self.excel_version}\\Excel\\Options'
 

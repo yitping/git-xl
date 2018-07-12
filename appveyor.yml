@@ -53,13 +53,8 @@ after_build:
   - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDna.xll" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.xll*" /C /Y
   - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.dna" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.dna*" /C /Y
   - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDna64.xll" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.xll*" /C /Y
-  - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDnaPack.exe" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.dna" /Y
-  - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDnaPack.exe" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.dna" /Y
-  - del "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.xll"
-  - del "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.xll"
-  - ren "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail_packed.xll" xltrail.xll
-  - ren "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64_packed.xll" xltrail64.xll
   - dir "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release"
+  - 7z a addin.zip "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\*.*"
   - signtool sign /f scripts/windows/key.p12 /p %secure% git-xltrail-*.exe
   - iscc scripts\windows\inno-setup-git-xltrail-installer.iss
   - ps: >-
@@ -85,10 +80,7 @@ artifacts:
   - path: git-xltrail-diff-x64.exe
   - path: git-xltrail-merge-x86.exe
   - path: git-xltrail-merge-x64.exe
-  - path: excel-addin\Addin\bin\Release\xltrail.xll
-    name: xltrail.xll
-  - path: excel-addin\Addin\bin\Release\xltrail64.xll
-    name: xltrail64.xll
+  - path: addin.zip
 
 deploy:
 - provider: GitHub

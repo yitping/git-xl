@@ -30,15 +30,7 @@
   #pragma error PathToMergeX64Binary + " does not exist, please build it first."
 #endif
 
-#define PathToAddinX86 "..\..\excel-addin\Addin\bin\Release\xltrail.xll"
-#ifnexist PathToAddinX86
-  #pragma error PathToAddinX86 + " does not exist, please build it first."
-#endif
-
-#define PathToAddinX64 "..\..\excel-addin\Addin\bin\Release\xltrail64.xll"
-#ifnexist PathToAddinX64
-  #pragma error PathToAddinX64 + " does not exist, please build it first."
-#endif
+#define PathToAddin "..\..\excel-addin\Addin\bin\Release\*"
 
 ; Arbitrarily choose the x86 executable here as both have the version embedded.
 #define MyVersionInfoVersion GetFileVersion(PathToX86Binary)
@@ -92,8 +84,8 @@ Source: {#PathToMergeX86Binary}; DestDir: "{app}"; Flags: ignoreversion; DestNam
 Source: {#PathToMergeX64Binary}; DestDir: "{app}"; Flags: ignoreversion; DestName: "git-xltrail-merge.exe"; Check: Is64BitInstallMode
 Source: {#PathToX86Binary}; DestDir: "{app}"; Flags: ignoreversion; DestName: "git-xltrail.exe"; Check: not Is64BitInstallMode
 Source: {#PathToX64Binary}; DestDir: "{app}"; Flags: ignoreversion; DestName: "git-xltrail.exe"; Check: Is64BitInstallMode
-Source: {#PathToAddinX86}; DestDir: "{app}"; Flags: ignoreversion; DestName: "xltrail.xll";
-Source: {#PathToAddinX64}; DestDir: "{app}"; Flags: ignoreversion; DestName: "xltrail64.xll";
+Source: {#PathToAddin}; DestDir: "{app}\addin"; Flags: ignoreversion recursesubdirs;
+
 
 [Registry]
 Root: HKLM; Subkey: "SYSTEM\CurrentControlSet\Control\Session Manager\Environment"; ValueType: expandsz; ValueName: "Path"; ValueData: "{olddata};{app}"; Check: IsAdminLoggedOn and NeedsAddPath('{app}')
@@ -104,7 +96,7 @@ Root: HKCU; Subkey: "Environment"; ValueType: string; ValueName: "GIT_XLTRAIL_PA
 [Code]
 function GetDefaultDirName(Dummy: string): string;
 begin
-  Result:=ExpandConstant('{userpf}\{#MyAppName}');
+  Result:=ExpandConstant('{localappdata}\{#MyAppName}');
 end;
 
 // Uses cmd to parse and find the location of Git through the env vars.

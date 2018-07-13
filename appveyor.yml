@@ -53,6 +53,7 @@ after_build:
   - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDna.xll" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.xll*" /C /Y
   - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail.dna" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.dna*" /C /Y
   - xcopy "%APPVEYOR_BUILD_FOLDER%\excel-addin\packages\ExcelDna.AddIn.0.34.6\tools\ExcelDna64.xll" "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\xltrail64.xll*" /C /Y
+  - dir "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin"
   - dir "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release"
   - 7z a addin.zip "%APPVEYOR_BUILD_FOLDER%\excel-addin\Addin\bin\Release\*.*"
   - signtool sign /f scripts/windows/key.p12 /p %secure% git-xltrail-*.exe

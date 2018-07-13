@@ -42,7 +42,45 @@ namespace xltrail.Client
                 worker.Start();
             }
 
-            static void Consume()
+            private static void Push(string directory)
+            {
+                //libgit2 repo
+                var repository = new LibGit2Sharp.Repository(directory);
+                var branch = repository.Head;
+
+                //git command line wrapper
+                var git = new Git(directory);
+
+                //push to origin (if exists)
+                var origin = repository.Network.Remotes.Where(x => x.Name == "origin").FirstOrDefault();
+                var trackedBranch = repository.Branches.Where(b => b.FriendlyName == "origin/" + repository.Head.FriendlyName).FirstOrDefault();
+                if (origin != null && trackedBranch != null)
+                {
+                    //fetch from origin
+                    git.Fetch();
+
+                    //calculate divergence between origin and local branch
+                    var divergence = repository.ObjectDatabase.CalculateHistoryDivergence(repository.Head.Tip, trackedBranch.Tip);
+
+                    //rebase if local is behind origin
+                    if (divergence.BehindBy > 0)
+                    {
+                        logger.InfoFormat("Reset branch {0}", branch.FriendlyName);
+                        repository.Reset(LibGit2Sharp.ResetMode.Hard, branch.TrackedBranch.Tip);
+                    }
+
+                    //push if local is ahead of origin
+                    if (divergence.AheadBy > 0)
+                    {
+                        var url = origin.PushUrl;
+                        logger.InfoFormat("{0} is behind {1} by {2} commit(s)", directory, url, branch.TrackingDetails.AheadBy);
+                        logger.InfoFormat("Push {0} to {1}", directory, url);
+                        git.Push(branch.FriendlyName);
+                    }
+                }
+            }
+
+            private static void Consume()
             {
                 logger.Info("Start consumer thread");
                 string directory;
@@ -52,39 +90,14 @@ namespace xltrail.Client
                     {
                         logger.InfoFormat("New item in queue: {0}", directory);
 
-                        //libgit2 repo
-                        var repository = new LibGit2Sharp.Repository(directory);
-                        var branch = repository.Head;
-
-                        //git command line wrapper
-                        var git = new Git(directory);
-
-                        //push to origin (if exists)
-                        var origin = repository.Network.Remotes.Where(x => x.Name == "origin").FirstOrDefault();
-                        var trackedBranch = repository.Branches.Where(b => b.FriendlyName == "origin/" + repository.Head.FriendlyName).FirstOrDefault();
-                        if (origin != null && trackedBranch != null)
+                        try
                         {
-                            //fetch from origin
-                            git.Fetch();
-
-                            //calculate divergence between origin and local branch
-                            var divergence = repository.ObjectDatabase.CalculateHistoryDivergence(repository.Head.Tip, trackedBranch.Tip);
-
-                            //rebase if local is behind origin
-                            if (divergence.BehindBy > 0)
-                            {
-                                logger.InfoFormat("Reset branch {0}", branch.FriendlyName);
-                                repository.Reset(LibGit2Sharp.ResetMode.Hard, branch.TrackedBranch.Tip);
-                            }
-
-                            //push if local is ahead of origin
-                            if (divergence.AheadBy > 0)
-                            {
-                                var url = origin.PushUrl;
-                                logger.InfoFormat("{0} is behind {1} by {2} commit(s)", directory, url, branch.TrackingDetails.AheadBy);
-                                logger.InfoFormat("Push {0} to {1}", directory, url);
-                                git.Push(branch.FriendlyName);
-                            }
+                            Push(directory);
+                        }
+                        catch (Exception e)
+                        {
+                            logger.Error(e.Message, e);
+                            ShowNotification(e.Message);
                         }
                     }
                     Thread.Sleep(2000);
@@ -192,14 +205,14 @@ namespace xltrail.Client
                     repositories.Enqueue(directory);
             }
 
-            private void ShowNotification(string description)
+            private static void ShowNotification(string description)
             {
                 var notification = new System.Windows.Forms.NotifyIcon()
                 {
                     Visible = true,
                     Icon = System.Drawing.SystemIcons.Information,
-                    // optional - BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Info,
-                    // optional - BalloonTipTitle = "My Title",
+                    BalloonTipIcon = System.Windows.Forms.ToolTipIcon.Warning,
+                    BalloonTipTitle = "xltrail",
                     BalloonTipText = description,
                 };
 
@@ -209,7 +222,7 @@ namespace xltrail.Client
                 // This will let the balloon close after it's 5 second timeout
                 // for demonstration purposes. Comment this out to see what happens
                 // when dispose is called while a balloon is still visible.
-                System.Threading.Thread.Sleep(10000);
+                Thread.Sleep(10000);
 
                 // The notification should be disposed when you don't need it anymore,
                 // but doing so will immediately close the balloon if it's visible.

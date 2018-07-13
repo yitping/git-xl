@@ -46,6 +46,9 @@ namespace xltrail.Client
             logger.DebugFormat("Stdout: {0}", stdout);
             logger.DebugFormat("Stderr: {0}", stderr);
 
+            if (stderr.Length > 0)
+                throw new Exception(stderr);
+
         }
 
         public void Commit(string message)

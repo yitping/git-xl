@@ -1,5 +1,5 @@
 <DnaLibrary Name="xltrail" RuntimeVersion="v4.0">
-  <ExternalLibrary Path="xltrail.dll" ExplicitExports="false" LoadFromBytes="true" Pack="true" />
+  <ExternalLibrary Path="xltrail.dll" ExplicitExports="false" LoadFromBytes="true" Pack="false" />
   
   <!-- 
        The RuntimeVersion attribute above allows two settings:

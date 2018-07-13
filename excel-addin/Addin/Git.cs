@@ -1,4 +1,5 @@
-﻿using System;
+﻿using log4net;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -9,7 +10,10 @@ namespace xltrail.Client
 {
     public class Git
     {
+        static readonly ILog logger = LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
+
         public string path;
+
         public Git(string path)
         {
             this.path = path;
@@ -29,14 +33,19 @@ namespace xltrail.Client
             gitInfo.Arguments = command;
             gitInfo.WorkingDirectory = path;
 
+            logger.DebugFormat("Execute command: {0}", path);
             gitProcess.StartInfo = gitInfo;
             gitProcess.Start();
 
-            string stderr = gitProcess.StandardError.ReadToEnd();
-            string stdout = gitProcess.StandardOutput.ReadToEnd();
-
+            var stderr = gitProcess.StandardError.ReadToEnd();
+            var stdout = gitProcess.StandardOutput.ReadToEnd();
             gitProcess.WaitForExit();
+            logger.DebugFormat("ExitCode : {0}", gitProcess.ExitCode);
             gitProcess.Close();
+
+            logger.DebugFormat("Stdout: {0}", stdout);
+            logger.DebugFormat("Stderr: {0}", stderr);
+
         }
 
         public void Commit(string message)

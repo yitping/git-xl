@@ -45,7 +45,12 @@ namespace xltrail.Client
 
             private void XlApp_WorkbookActivate(Excel.Workbook workbook)
             {
-                var path = workbook.FullName;
+                Refresh();
+            }
+
+            private static void Refresh()
+            {
+                var path = xlApp.ActiveWorkbook.FullName;
                 var directory = Path.GetDirectoryName(path);
                 if (!LibGit2Sharp.Repository.IsValid(directory))
                 {
@@ -53,16 +58,9 @@ namespace xltrail.Client
                 }
                 else
                 {
-                    Refresh();
+                    var repository = new LibGit2Sharp.Repository(directory);
+                    xlApp.Caption = repository.Head.FriendlyName + " [" + repository.Head.Tip.Id.Sha.Substring(0, 7) + "]";
                 }
-            }
-
-            private static void Refresh()
-            {
-                var path = xlApp.ActiveWorkbook.FullName;
-                var directory = Path.GetDirectoryName(path);
-                var repository = new LibGit2Sharp.Repository(directory);
-                xlApp.Caption = repository.Head.FriendlyName + " [" + repository.Head.Tip.Id.Sha.Substring(0, 7) + "]";
 
             }
 

@@ -40,13 +40,14 @@ namespace xltrail.Client
             var stderr = gitProcess.StandardError.ReadToEnd();
             var stdout = gitProcess.StandardOutput.ReadToEnd();
             gitProcess.WaitForExit();
-            logger.DebugFormat("ExitCode : {0}", gitProcess.ExitCode);
+            var exitCode = gitProcess.ExitCode;
             gitProcess.Close();
 
+            logger.DebugFormat("ExitCode: {0}", exitCode);
             logger.DebugFormat("Stdout: {0}", stdout);
             logger.DebugFormat("Stderr: {0}", stderr);
 
-            if (stderr.Length > 0)
+            if (exitCode != 0)
                 throw new Exception(stderr);
 
         }

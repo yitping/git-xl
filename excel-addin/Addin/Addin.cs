@@ -36,10 +36,34 @@ namespace xltrail.Client
                 xlApp = (Excel.Application)ExcelDnaUtil.Application;
                 xlApp.WorkbookOpen += XlApp_WorkbookOpen;
                 xlApp.WorkbookAfterSave += XlApp_WorkbookAfterSave;
+                xlApp.WorkbookActivate += XlApp_WorkbookActivate;
 
                 repositories = new ConcurrentQueue<string>();
                 var worker = new Thread(Consume);
                 worker.Start();
+            }
+
+            private void XlApp_WorkbookActivate(Excel.Workbook workbook)
+            {
+                var path = workbook.FullName;
+                var directory = Path.GetDirectoryName(path);
+                if (!LibGit2Sharp.Repository.IsValid(directory))
+                {
+                    xlApp.Caption = null;
+                }
+                else
+                {
+                    Refresh();
+                }
+            }
+
+            private static void Refresh()
+            {
+                var path = xlApp.ActiveWorkbook.FullName;
+                var directory = Path.GetDirectoryName(path);
+                var repository = new LibGit2Sharp.Repository(directory);
+                xlApp.Caption = repository.Head.FriendlyName + " [" + repository.Head.Tip.Id.Sha.Substring(0, 7) + "]";
+
             }
 
             private static void Push(string directory)
@@ -203,6 +227,8 @@ namespace xltrail.Client
                 //add to list for background push
                 if (!repositories.Contains(directory))
                     repositories.Enqueue(directory);
+
+                Refresh();
             }
 
             private static void ShowNotification(string description)

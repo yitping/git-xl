@@ -3,11 +3,24 @@ import os
 import shutil
 import colorama
 import clr
+import daff
 from difflib import unified_diff
 from colorama import Fore, Back, Style, init
 
 clr.AddReference('xltrail-core')
 from xltrail.core import Workbook 
+
+
+def to_grid(cells):
+    cells = [(cell.row, cell.column, cell.content) for cell in cells]
+    rows = max(cell[0] for cell in cells) + 1
+    columns = max(cell[1] for cell in cells) + 1
+
+    # initialise empty list of lists
+    grid = [[''] * columns for i in range(rows)]
+    for row, column, content in cells:
+        grid[row][column] = content
+    return grid
 
 
 if __name__ == '__main__':
@@ -43,10 +56,28 @@ if __name__ == '__main__':
             })
         elif a_sheet.digest != b_sheets[a_name].digest:
             b_sheet = b_sheets[a_name]
+            a_grid = to_grid(a_sheet.cells)
+            b_grid = to_grid(b_sheet.cells)
+
+            a = daff.PythonTableView(a_grid)
+            b = daff.PythonTableView(b_grid)
+
+            # align
+            alignment = daff.Coopy.compareTables(b, a).align()
+
+            data_diff = []
+            table_diff = daff.PythonTableView(data_diff)
+
+            flags = daff.CompareFlags()
+            highlighter = daff.TableDiff(alignment, flags)
+            highlighter.hilite(table_diff)
+
+            renderer = daff.TerminalDiffRender()
+
             diffs.append({
                 'a': '--- a/' + workbook_name + '/Worksheets/' + a_name,
                 'b': '+++ b/' + workbook_name + '/Worksheets/' + a_name,
-                'diff': Fore.RED + '-' + str(b_sheet.cells.Count) + ' cell' + ('' if b_sheet.cells.Count == 1 else 's') + '\n' + Fore.GREEN + '+' + str(a_sheet.cells.Count) + ' cell' + ('' if a_sheet.cells.Count == 1 else 's')
+                'diff': renderer.render(table_diff)
             })
 
     for b_name, b_sheet in b_sheets.items():

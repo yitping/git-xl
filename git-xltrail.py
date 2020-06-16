@@ -3,11 +3,14 @@ import sys
 import os
 import subprocess
 
+import xltrail
 
-VERSION = '0.0.0'
-GIT_COMMIT = ''
+
+VERSION = xltrail.VERSION
+GIT_COMMIT = xltrail.GIT_COMMIT
+PLATFORM_NAME = sys.platform
 PYTHON_VERSION = f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}'
-GIT_XLTRAIL_DIFF = 'git-xltrail-diff.exe'
+GIT_XLTRAIL_DIFF = 'git-xltrail-diff'
 
 FILE_EXTENSIONS = ['xls', 'xlt', 'xla', 'xlam', 'xlsx', 'xlsm', 'xlsb']
 GIT_ATTRIBUTES = ['*.' + file_ext + ' diff=xltrail' for file_ext in FILE_EXTENSIONS]
@@ -156,7 +159,7 @@ class Installer:
 		if os.path.exists(path):
 			os.remove(path)
 
-GIT_XLTRAIL_VERSION = f'git-xltrail/{VERSION} (windows; Python {PYTHON_VERSION}); git {GIT_COMMIT}'
+GIT_XLTRAIL_VERSION = f'git-xltrail/{VERSION} ({PLATFORM_NAME}; Python {PYTHON_VERSION}); git {GIT_COMMIT}'
 
 HELP_GENERIC = f"""{GIT_XLTRAIL_VERSION}
 git xltrail <command> [<args>]\n

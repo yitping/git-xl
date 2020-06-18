@@ -1,3 +1,6 @@
 colorama==0.3.9
 oletools==0.51
 pyinstaller==3.6
+xlrd==1.2.0
+pyxlsb==1.0.6
+pandas==1.0.4

@@ -1,12 +1,61 @@
 #!/usr/bin/env python
 import sys
 import os
+import pandas as pd
+import re
+
+from collections import OrderedDict
+from typing import Generator, List
 
 from difflib import unified_diff
 from oletools.olevba3 import VBA_Parser
 import colorama
 
 from colorama import Fore, Style
+
+
+def get_sheets(workbook: str, sep: str = u"\u2551", **kwargs):
+    """
+    Read the entire excel workbook and return a dict of stringified content
+
+    >>> a = get_sheets("test01.xlsb")
+    >>> len(a)
+    9
+    >>> "Resource" in a
+    True
+    >>> len(a["Resource"])
+    193
+    >>> len(a["Resource"][10].split("|"))
+    37
+    >>> "Queue" in a
+    True
+    >>> len(a["Queue"])
+    31
+    >>> len(a["Queue"][10].split("|"))
+    11
+    >>> b = get_sheets("xlsvba/helloworld.xlsm", sep = "  |  ")
+    >>> len(b)
+    2
+    >>> "Sheet2" in b
+    True
+    >>> len(b["Sheet2"][0].split("  |  "))
+    2
+    """
+    engine = "pyxlsb" if workbook.endswith(".xlsb") else None
+    sheets = pd.read_excel(
+        workbook,
+        sheet_name=None,
+        keep_default_na=False,
+        header=None,
+        engine=engine,
+        **kwargs,
+    )
+    return {
+        sheet_name: [
+            sep.join([str(col) for col in row]) for i, row in df.iterrows()
+        ]
+        for sheet_name, df in sheets.items()
+    }
 
 
 def get_vba(workbook):
@@ -37,6 +86,23 @@ def get_vba(workbook):
     return modules
 
 
+def colorize_diff_lines(diff_gen: Generator[str, None, None]) -> List[str]:
+    return [
+        (
+            Fore.RED
+            if line.startswith("-")
+            else (
+                Fore.GREEN
+                if line.startswith("+")
+                else (Fore.CYAN if line.startswith("@") else Style.RESET_ALL)
+            )
+        )
+        + line.strip("\n")
+        for line in list(diff_gen)
+        if not line.startswith("---") and not line.startswith("+++")
+    ]
+
+
 if __name__ == "__main__":
     if len(sys.argv) != 8:
         print("Unexpected number of arguments")
@@ -52,6 +118,12 @@ if __name__ == "__main__":
     )
     workbook_b_modules = (
         {} if workbook_b == os.devnull else get_vba(path_workbook_b)
+    )
+    workbook_a_sheets = (
+        {} if workbook_a == os.devnull else get_sheets(path_workbook_a)
+    )
+    workbook_b_sheets = (
+        {} if workbook_b == os.devnull else get_sheets(path_workbook_b)
     )
 
     diffs = []
@@ -72,28 +144,12 @@ if __name__ == "__main__":
                     "a": "--- a/" + workbook_name + "/VBA/" + module_a,
                     "b": "+++ b/" + workbook_name + "/VBA/" + module_a,
                     "diff": "\n".join(
-                        [
-                            (
-                                Fore.RED
-                                if line.startswith("-")
-                                else (
-                                    Fore.GREEN
-                                    if line.startswith("+")
-                                    else (
-                                        Fore.CYAN
-                                        if line.startswith("@")
-                                        else ""
-                                    )
-                                )
+                        colorize_diff_lines(
+                            unified_diff(
+                                workbook_b_modules[module_a].split("\n"),
+                                vba_a.split("\n"),
                             )
-                            + line.strip("\n")
-                            for line in list(
-                                unified_diff(
-                                    workbook_b_modules[module_a].split("\n"),
-                                    vba_a.split("\n"),
-                                )
-                            )[2:]
-                        ]
+                        )
                     ),
                 }
             )
@@ -102,13 +158,44 @@ if __name__ == "__main__":
         if module_b not in workbook_a_modules:
             diffs.append(
                 {
-                    "a": "--- b/" + workbook_name + "/VBA/" + module_b,
+                    "a": "--- a/" + workbook_name + "/VBA/" + module_b,
                     "b": "+++ /dev/null",
                     "diff": "\n".join(
                         [Fore.RED + "-" + line for line in vba_b.split("\n")]
                     ),
                 }
             )
+
+    sheets = OrderedDict.fromkeys(
+        [
+            sheet
+            for workbook in [workbook_a_sheets, workbook_b_sheets]
+            for sheet in workbook.keys()
+        ]
+    )
+    for sheet in sheets:
+        label_b = "+++ " + (
+            f"b/{workbook_name}/{sheet}"
+            if sheet in workbook_a_sheets
+            else "/dev/null"
+        )
+        label_a = "--- " + (
+            f"a/{workbook_name}/{sheet}"
+            if sheet in workbook_b_sheets
+            else "/dev/null"
+        )
+        # to follow the convention of the original code above
+        # b is a and a is b
+        diff_ba = unified_diff(
+            workbook_b_sheets.get(sheet, []), workbook_a_sheets.get(sheet, [])
+        )
+        diffs.append(
+            {
+                "a": label_a,
+                "b": label_b,
+                "diff": "\n".join(colorize_diff_lines(diff_ba)),
+            }
+        )
 
     colorama.init(strip=False)
 
@@ -124,4 +211,4 @@ if __name__ == "__main__":
         print(Style.BRIGHT + diff["a"])
         print(Style.BRIGHT + diff["b"])
         print(diff["diff"])
-        print("")
+        print(Style.RESET_ALL)

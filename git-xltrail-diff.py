@@ -134,7 +134,12 @@ if __name__ == "__main__":
                     "a": "--- /dev/null",
                     "b": "+++ b/" + workbook_name + "/VBA/" + module_a,
                     "diff": "\n".join(
-                        [Fore.GREEN + "+" + line for line in vba_a.split("\n")]
+                        colorize_diff_lines(
+                            unified_diff(
+                                [],
+                                vba_a.split("\n"),
+                            )
+                        )
                     ),
                 }
             )
@@ -161,7 +166,12 @@ if __name__ == "__main__":
                     "a": "--- a/" + workbook_name + "/VBA/" + module_b,
                     "b": "+++ /dev/null",
                     "diff": "\n".join(
-                        [Fore.RED + "-" + line for line in vba_b.split("\n")]
+                        colorize_diff_lines(
+                            unified_diff(
+                                vba_b.split("\n"),
+                                [],
+                            )
+                        )
                     ),
                 }
             )

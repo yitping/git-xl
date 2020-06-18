@@ -88,13 +88,14 @@ def get_vba(workbook):
 
 def colorize_diff_lines(diff_gen: Generator[str, None, None]) -> List[str]:
     return [
-        (
+        Style.RESET_ALL
+        + (
             Fore.RED
             if line.startswith("-")
             else (
                 Fore.GREEN
                 if line.startswith("+")
-                else (Fore.CYAN if line.startswith("@") else Style.RESET_ALL)
+                else (Fore.CYAN if line.startswith("@") else "")
             )
         )
         + line.strip("\n")
